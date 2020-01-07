@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using AutoMapper;
 
 namespace CoreCodeCamp
 {
@@ -20,6 +21,8 @@ namespace CoreCodeCamp
     {
       services.AddDbContext<CampContext>();
       services.AddScoped<ICampRepository, CampRepository>();
+
+      services.AddAutoMapper();
 
       services.AddMvc()
         .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
