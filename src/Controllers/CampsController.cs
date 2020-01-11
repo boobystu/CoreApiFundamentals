@@ -34,7 +34,7 @@ namespace CoreCodeCamp.Controllers
 
                 return _mapper.Map<CampModel[]>(results);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 return this.StatusCode(StatusCodes.Status500InternalServerError, "Database failure");
             }
@@ -69,7 +69,7 @@ namespace CoreCodeCamp.Controllers
                 var results = await _repository.GetAllCampsByEventDate(theDate, includeTalks);
 
                 if (!results.Any()) return NotFound();
-                
+
                 return _mapper.Map<CampModel[]>(results);
 
             }
@@ -83,7 +83,15 @@ namespace CoreCodeCamp.Controllers
         {
             try
             {
-                var location = _linkGenerator.GetPathByAction("Get", "Camps", new { moniker = model.Moniker});
+                var existing = await _repository.GetCampAsync(model.Moniker);
+                if (existing != null)
+                {
+                    return BadRequest("Moniker in use");
+                }
+
+                var location = _linkGenerator.GetPathByAction("Get",
+                                                                "Camps",
+                                                                new { moniker = model.Moniker });
 
                 if (string.IsNullOrWhiteSpace(location))
                 {
@@ -103,6 +111,52 @@ namespace CoreCodeCamp.Controllers
             }
 
             return BadRequest();
+        }
+
+        [HttpPut("{moniker}")]
+        public async Task<ActionResult<CampModel>> Put(string moniker, CampModel model)
+        {
+            try
+            {
+                var oldCamp = await _repository.GetCampAsync(moniker);
+                if (oldCamp == null) return NotFound($"Could not find camp with moniker of {moniker}");
+
+                _mapper.Map(model, oldCamp);
+
+                if(await _repository.SaveChangesAsync())
+                {
+                    return _mapper.Map<CampModel>(oldCamp);
+                }
+            }
+            catch (Exception)
+            {
+                return this.StatusCode(StatusCodes.Status500InternalServerError, "Database failure");
+            }
+
+            return BadRequest();
+        }
+
+        [HttpDelete("{moniker}")]
+        public async Task<IActionResult> Delete(string moniker)
+        {
+            try
+            {
+                var oldCamp = await _repository.GetCampAsync(moniker);
+                if (oldCamp == null) return NotFound($"Could not find camp with moniker of {moniker}");
+
+                _repository.Delete(oldCamp);
+
+                if(await _repository.SaveChangesAsync())
+                {
+                    return Ok();
+                }
+            }
+            catch(Exception)
+            {
+                return this.StatusCode(StatusCodes.Status500InternalServerError, "Database failure");
+            }
+
+            return BadRequest("Failed to delete the camp");
         }
     }
 }
