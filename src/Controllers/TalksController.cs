@@ -45,6 +45,12 @@ namespace CoreCodeCamp.Controllers
             try
             {
                 var talk = await _repository.GetTalkByMonikerAsync(moniker, id, true);
+
+                if(talk == null)
+                {
+                    return NotFound();
+                }
+
                 return _mapper.Map<TalkModel>(talk);
             }
             catch (Exception)
@@ -67,12 +73,12 @@ namespace CoreCodeCamp.Controllers
                 var talk = _mapper.Map<Talk>(model);
                 talk.Camp = camp;
 
-                if(model.Speaker == null)
+                if (model.Speaker == null)
                 {
                     return BadRequest("Speaker ID is required");
                 }
                 var speaker = await _repository.GetSpeakerAsync(model.Speaker.SpeakerId);
-                if(speaker == null)
+                if (speaker == null)
                 {
                     return BadRequest("Speaker could not be found");
                 }
@@ -80,7 +86,7 @@ namespace CoreCodeCamp.Controllers
 
                 _repository.Add(talk);
 
-                if(await _repository.SaveChangesAsync())
+                if (await _repository.SaveChangesAsync())
                 {
                     var url = _linkGenerator.GetPathByAction(HttpContext,
                                                             "Get",
@@ -90,6 +96,72 @@ namespace CoreCodeCamp.Controllers
                 else
                 {
                     return BadRequest("Failed to save new talk");
+                }
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Failed to get talk");
+            }
+        }
+
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult<TalkModel>> Put(string moniker, int id, TalkModel model)
+        {
+            try
+            {
+                var talk = await _repository.GetTalkByMonikerAsync(moniker, id, true);
+
+                if(talk == null)
+                {
+                    return NotFound("Couldn't find the talk");
+                }
+
+                if(model.Speaker != null)
+                {
+                    var speaker = await _repository.GetSpeakerAsync(model.Speaker.SpeakerId);
+
+                    if(speaker != null)
+                    {
+                        talk.Speaker = speaker;
+                    }
+                }
+
+                if (await _repository.SaveChangesAsync())
+                {
+                    return _mapper.Map<TalkModel>(talk);
+                }
+                else
+                {
+                    return BadRequest("Failed to update database");
+                }
+            }
+            catch(Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Failed to get talk");
+            }
+        }
+
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(string moniker, int id, TalkModel model)
+        {
+            try
+            {
+                var talk = await _repository.GetTalkByMonikerAsync(moniker, id, true);
+
+                if(talk == null)
+                {
+                    return NotFound("Failed to find talk");
+                }
+
+                _repository.Delete(talk);
+
+                if(await _repository.SaveChangesAsync())
+                {
+                    return Ok();
+                }
+                else
+                {
+                    return BadRequest("Failed to delete talk");
                 }
             }
             catch (Exception)
