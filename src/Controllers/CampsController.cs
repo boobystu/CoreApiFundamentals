@@ -158,6 +158,8 @@ namespace CoreCodeCamp.Controllers
                 return this.StatusCode(StatusCodes.Status500InternalServerError, "Database failure");
             }
 
+            //line for git test
+
             return BadRequest();
         }
 
